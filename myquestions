@@ -1,171 +1,168 @@
-question-0001.txt 
-El Problema: Análisis de Valor de Inventario
-Tienes un DataFrame con el inventario de una tienda que incluye producto, categoria, stock y precio_unitario.
-Tu Misión: Escribe una función llamada analizar_valor_inventario(df) que realice lo siguiente:
+question-0001.txt
+El Problema: Análisis de Series Temporales y Detección de Valores Atípicos
+Una empresa de logística monitorea el tiempo de entrega de paquetes en distintas ciudades. Se ha detectado que algunos envíos presentan retrasos significativos que deben ser identificados comparándolos con el comportamiento histórico específico de cada ciudad.
 
-Cree una columna valor_total calculando stock * precio_unitario.
+Tu Misión:
+Escribe una función llamada detectar_retrasos_por_ciudad(df) que realice lo siguiente:
+1. Preprocesamiento: Convierta la columna 'fecha_envio' a objetos datetime de pandas.
+2. Ordenamiento: Ordene el DataFrame por 'ciudad' y 'fecha_envio' de forma ascendente.
+3. Estadísticas: Calcule la media (mean) y la desviación estándar (std) del 'tiempo_entrega' agrupando por 'ciudad'.
+4. Detección: Cree una columna booleana llamada 'retraso' que sea True si el 'tiempo_entrega' es estrictamente mayor a: media_ciudad + (2 * std_ciudad).
+5. Restricción: No utilices bucles (for o while) para los cálculos estadísticos; aprovecha las funciones vectorizadas de pandas.
 
-Agrupe por categoria y calcule la suma de valor_total y el promedio de precio_unitario por categoría.
-
-Filtre para devolver solo las categorías cuyo valor_total sumado sea superior al promedio global de todos los valores totales.
-
-Devuelva el DataFrame resultante ordenado por valor_total de forma descendente.
-
+Retorno:
+El DataFrame original con tres columnas adicionales: 'media_ciudad', 'std_ciudad' y 'retraso'.
 question-0001-usecase-generator.py
 import pandas as pd
 import numpy as np
 import random
 
-def generar_caso_de_uso_analizar_valor_inventario():
-    # 1. Configuración aleatoria
-    categorias = ['Electrónica', 'Hogar', 'Ropa', 'Deportes']
-    n_rows = random.randint(15, 25)
-    
-    # 2. Generar datos aleatorios
-    df_input = pd.DataFrame({
-        'producto': [f'Prod_{i}' for i in range(n_rows)],
-        'categoria': [random.choice(categorias) for _ in range(n_rows)],
-        'stock': [random.randint(1, 50) for _ in range(n_rows)],
-        'precio_unitario': [round(random.uniform(10, 100), 2) for _ in range(n_rows)]
+def generar_caso_de_uso_detectar_retrasos_por_ciudad():
+    n = 100
+    ciudades = ['Bogota', 'Medellin', 'Cali']
+    df = pd.DataFrame({
+        'ciudad': [random.choice(ciudades) for _ in range(n)],
+        'fecha_envio': pd.date_range('2024-01-01', periods=n).astype(str),
+        'tiempo_entrega': [round(random.uniform(2, 10), 2) for _ in range(n)]
     })
+    df.loc[0, 'tiempo_entrega'] = 50.0 
+    input_data = {'df': df.copy()}
     
-    # 3. Preparar el INPUT (Diccionario de argumentos)
-    input_data = {'df': df_input.copy()}
+    df_res = df.copy()
+    df_res['fecha_envio'] = pd.to_datetime(df_res['fecha_envio'])
+    df_res = df_res.sort_values(['ciudad', 'fecha_envio'])
+    stats = df_res.groupby('ciudad')['tiempo_entrega'].agg(['mean', 'std']).reset_index()
+    stats.columns = ['ciudad', 'media_ciudad', 'std_ciudad']
+    df_res = df_res.merge(stats, on='ciudad')
+    df_res['retraso'] = df_res['tiempo_entrega'] > (df_res['media_ciudad'] + 2 * df_res['std_ciudad'])
     
-    # 4. Calcular el OUTPUT esperado (Ground Truth)
-    df_temp = df_input.copy()
-    
-    # A. Cálculo de valor total por fila
-    df_temp['valor_total'] = df_temp['stock'] * df_temp['precio_unitario']
-    
-    # B. Agregación por categoría
-    res = df_temp.groupby('categoria').agg(
-        valor_total=('valor_total', 'sum'), 
-        precio_promedio=('precio_unitario', 'mean')
-    )
-    
-    # C. Filtro: Categorías con valor_total > promedio global de valor_total
-    promedio_global = res['valor_total'].mean()
-    output_expected = res[res['valor_total'] > promedio_global].sort_values(by='valor_total', ascending=False)
-    
-    # IMPORTANTE: La función debe retornar la tupla (input, output)
-    return input_data, output_expected
+    return input_data, df_res
 
-# Esto sirve para que tú mismo pruebes si funciona antes de subirlo
-if __name__ == "__main__":
-    entrada, salida = generar_caso_de_uso_analizar_valor_inventario()
-    print("=== INPUT (Primeras 3 filas) ===")
-    print(entrada['df'].head(3))
-    print("\n=== OUTPUT ESPERADO ===")
-    print(salida)
+
 
 question-0002.txt
-El Problema: Detección de Picos en Series Temporales
-Recibes un DataFrame con lecturas de un sensor: 'timestamp' (string), 'sensor_id' y 'lectura'.
-Tu Misión: Escribe una función llamada detectar_picos_moviles(df, ventana) que:
-1. Convierta 'timestamp' a objetos datetime.
-2. Calcule la media móvil (rolling mean) de 'lectura' usando el tamaño de 'ventana' (int).
-3. Cree una columna 'es_pico' (bool) que sea True si la 'lectura' es mayor a 1.5 veces la media móvil de esa fila.
-4. Elimine las filas con valores NaN resultantes del cálculo móvil.
-5. Devuelva el DataFrame resultante.
+El Problema: Pipeline de Preprocesamiento y Detección de Anomalías
+Un banco analiza solicitudes de crédito que incluyen variables numéricas y categóricas. Antes de entrenar un modelo predictivo, es necesario estandarizar los datos y filtrar registros sospechosos.
+
+Tu Misión:
+Escribe una función llamada preparar_datos_credito(df, target_col) que realice lo siguiente:
+1. División: Separe las características (X) de la variable objetivo (y) usando target_col.
+2. Transformación: Use ColumnTransformer para aplicar:
+   - Numéricas: Imputación por la mediana (median) y escalamiento con StandardScaler.
+   - Categóricas: Imputación constante ('missing') y OneHotEncoder (sparse_output=False).
+3. Limpieza: Utilice IsolationForest (random_state=42, contamination=0.05) sobre los datos transformados para identificar anomalías.
+4. Filtrado: Elimine las filas identificadas como anomalías (donde el modelo predice -1) tanto en X como en y.
+
+Retorno:
+Una tupla (X_limpio, y_limpio) conteniendo arrays de NumPy.
 
 question-0002-usecase-generator.py
 import pandas as pd
 import numpy as np
-import random
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.ensemble import IsolationForest
 
-def generar_caso_de_uso_detectar_picos_moviles():
-    # 1. Configuración aleatoria
-    n_rows = random.randint(20, 40)
-    ventana = random.randint(3, 6)
-    
-    # 2. Generar datos
-    fechas = pd.date_range(start='2024-01-01', periods=n_rows, freq='H').astype(str).tolist()
-    lecturas = [round(random.uniform(10, 20), 2) for _ in range(n_rows)]
-    
-    # Insertar un pico artificial para asegurar que la lógica se pruebe
-    lecturas[random.randint(ventana, n_rows-1)] = 95.0
-    
-    df_input = pd.DataFrame({
-        'timestamp': fechas,
-        'sensor_id': [101] * n_rows,
-        'lectura': lecturas
+def generar_caso_de_uso_preparar_datos_credito():
+    n = 200
+    df = pd.DataFrame({
+        'ingresos': np.random.normal(3000, 1000, n),
+        'deuda': np.random.normal(1000, 500, n),
+        'edad': np.random.randint(18, 70, n),
+        'tipo_empleo': np.random.choice(['fijo', 'temporal', 'independiente'], n),
+        'aprobado': np.random.choice([0, 1], n)
     })
+    target_col = 'aprobado'
+    input_data = {'df': df.copy(), 'target_col': target_col}
+
+    X = df.drop(columns=[target_col])
+    y = df[target_col].values
+    num_cols = ['ingresos', 'deuda', 'edad']
+    cat_cols = ['tipo_empleo']
     
-    input_data = {'df': df_input.copy(), 'ventana': ventana}
+    transformer = ColumnTransformer([
+        ('num', Pipeline([('imputer', SimpleImputer(strategy='median')), ('scaler', StandardScaler())]), num_cols),
+        ('cat', Pipeline([('imputer', SimpleImputer(strategy='constant', fill_value='missing')), ('ohe', OneHotEncoder(sparse_output=False))]), cat_cols)
+    ])
     
-    # 3. Lógica de referencia (Output)
-    df_res = df_input.copy()
-    df_res['timestamp'] = pd.to_datetime(df_res['timestamp'])
-    ma = df_res['lectura'].rolling(window=ventana).mean()
-    df_res['es_pico'] = df_res['lectura'] > (ma * 1.5)
+    X_proc = transformer.fit_transform(X)
+    iso = IsolationForest(random_state=42, contamination=0.05)
+    anomalias = iso.fit_predict(X_proc)
+    mask = anomalias == 1
     
-    # Eliminar NaNs y resetear índice
-    output_expected = df_res.dropna().reset_index(drop=True)
-    
-    return input_data, output_expected
+    return input_data, (X_proc[mask], y[mask])
 
 question-0003.txt
-El Problema: Detección de Anomalías Financieras
-Tu Misión: Escribe una función llamada detectar_anomalias_forest(X) que:
-1. Escale los datos usando RobustScaler de sklearn.
-2. Instancie IsolationForest con contamination=0.1 y random_state=42.
-3. Entrene el modelo con los datos escalados y devuelva un array de numpy con las predicciones (1 para normal, -1 para anomalía).
+El Problema: Reducción de Dimensionalidad (PCA) en Sensores Industriales
+Se desea reducir la dimensionalidad de un conjunto de datos de sensores manteniendo el máximo de información posible para optimizar el almacenamiento.
+
+Tu Misión:
+Escribe una función llamada reducir_y_evaluar_pca(df, n_componentes) que realice lo siguiente:
+1. Escalamiento: Estandarice todas las columnas del DataFrame usando StandardScaler.
+2. Reducción: Aplique PCA para reducir los datos al número de n_componentes especificado.
+3. Varianza: Calcule la varianza explicada acumulada de los componentes seleccionados.
+4. Integridad: Asegúrese de que la función no modifique el DataFrame original.
+
+Retorno:
+Una tupla con los datos transformados (array de NumPy) y el valor de la varianza explicada acumulada (float).
 
 question-0003-usecase-generator.py
-import numpy as np
-from sklearn.ensemble import IsolationForest
-from sklearn.preprocessing import RobustScaler
-import random
 
-def generar_caso_de_uso_detectar_anomalias_forest():
-    # 1. Configuración aleatoria
-    n_samples = random.randint(50, 80)
-    n_features = 3
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+
+def generar_caso_de_uso_reducir_y_evaluar_pca():
+    n = 150
+    df = pd.DataFrame({
+        'temperatura': np.random.normal(50, 10, n),
+        'presion': np.random.normal(30, 5, n),
+        'vibracion': np.random.normal(5, 1, n),
+        'flujo': np.random.normal(100, 20, n)
+    })
+    n_comp = 2
+    input_data = {'df': df.copy(), 'n_componentes': n_comp}
+
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(df)
+    pca = PCA(n_components=n_comp)
+    X_reducido = pca.fit_transform(X_scaled)
+    varianza = float(np.sum(pca.explained_variance_ratio_))
     
-    # 2. Generar datos (Normales + algunos outliers)
-    X_input = np.random.randn(n_samples, n_features) * 5
-    X_input[:3] = X_input[:3] + 100 # Inyectar anomalías
-    
-    input_data = {'X': X_input}
-    
-    # 3. Lógica de referencia
-    scaler = RobustScaler()
-    X_scaled = scaler.fit_transform(X_input)
-    
-    model = IsolationForest(contamination=0.1, random_state=42)
-    output_expected = model.fit_predict(X_scaled)
-    
-    return input_data, output_expected
+    return input_data, (X_reducido, varianza)
 
 question-0004.txt
-El Problema: Reducción de Dimensionalidad (PCA)
-Tu Misión: Escribe una función llamada reducir_dimensiones_pca(X) que:
-1. Estandarice los datos usando StandardScaler.
-2. Aplique PCA para reducir a exactamente 2 componentes principales con random_state=42.
-3. Devuelva un array de numpy con la matriz transformada (n_samples, 2).
+El Problema: Evaluación de Modelos mediante Umbrales de Decisión
+Se desea evaluar cómo varía el F1-score de un modelo de clasificación al modificar manualmente el umbral de decisión.
 
-question-0004-usecase-generator.py
+Tu Misión:
+Escribe una función llamada evaluar_modelo_por_umbrales(X, y, umbrales) que realice lo siguiente:
+1. Partición: Divida los datos en entrenamiento y prueba (80/20) con random_state=42.
+2. Entrenamiento: Entrene un modelo de LogisticRegression con los datos de entrenamiento.
+3. Probabilidades: Obtenga las probabilidades de la clase positiva (1) para el conjunto de prueba.
+4. Evaluación: Para cada valor en la lista 'umbrales', calcule el f1_score comparando las etiquetas reales con las predicciones generadas por dicho umbral (prediccion = prob >= umbral).
+
+Retorno:
+Un array de NumPy con los F1-scores correspondientes a cada umbral.
+import pandas as pd
 import numpy as np
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
-import random
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import f1_score
 
-def generar_caso_de_uso_reducir_dimensiones_pca():
-    # 1. Configuración aleatoria
-    n_rows = random.randint(30, 50)
-    n_cols = random.randint(4, 8)
+def generar_caso_de_uso_evaluar_modelo_por_umbrales():
+    n = 200
+    X = pd.DataFrame(np.random.randn(n, 3), columns=['f1', 'f2', 'f3'])
+    y = pd.Series((X['f1'] + X['f2'] > 0).astype(int))
+    umbrales = [0.3, 0.5, 0.7]
+    input_data = {'X': X, 'y': y, 'umbrales': umbrales}
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    model = LogisticRegression().fit(X_train, y_train)
+    probs = model.predict_proba(X_test)[:, 1]
+    scores = [f1_score(y_test, (probs >= u).astype(int)) for u in umbrales]
     
-    # 2. Generar datos
-    X_input = np.random.rand(n_rows, n_cols) * 100
-    
-    input_data = {'X': X_input}
-    
-    # 3. Lógica de referencia
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X_input)
-    
-    pca = PCA(n_components=2, random_state=42)
-    output_expected = pca.fit_transform(X_scaled)
-    
-    return input_data, output_expected
+    return input_data, np.array(scores)
