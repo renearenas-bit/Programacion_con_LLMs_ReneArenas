@@ -38,8 +38,6 @@ def generar_caso_de_uso_detectar_retrasos_por_ciudad():
     
     return input_data, df_res
 
-
-
 question-0002.txt
 El Problema: Pipeline de Preprocesamiento y Detección de Anomalías
 Un banco analiza solicitudes de crédito que incluyen variables numéricas y categóricas. Antes de entrenar un modelo predictivo, es necesario estandarizar los datos y filtrar registros sospechosos.
@@ -109,7 +107,6 @@ Retorno:
 Una tupla con los datos transformados (array de NumPy) y el valor de la varianza explicada acumulada (float).
 
 question-0003-usecase-generator.py
-
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
@@ -147,6 +144,8 @@ Escribe una función llamada evaluar_modelo_por_umbrales(X, y, umbrales) que rea
 
 Retorno:
 Un array de NumPy con los F1-scores correspondientes a cada umbral.
+
+question-0004-usecase-generator.py
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
