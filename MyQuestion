@@ -1,1 +1,56 @@
+import pandas as pd
+import numpy as np
+import random
 
+def generar_caso_de_uso_detectar_picos_moviles():
+    """
+    Genera un caso de prueba aleatorio para la función detectar_picos_moviles.
+    """
+    # 1. Configuración aleatoria
+    n_rows = random.randint(20, 40)
+    ventana_rand = random.randint(3, 7)
+    
+    # 2. Generar datos aleatorios
+    fechas = pd.date_range(start='2024-01-01', periods=n_rows, freq='H').astype(str).tolist()
+    lecturas = [round(random.uniform(10.0, 20.0), 2) for _ in range(n_rows)]
+    
+    # Insertar un par de "picos" manuales para asegurar que el test sea interesante
+    pico_idx = random.randint(ventana_rand, n_rows - 1)
+    lecturas[pico_idx] = 100.0 # Un valor claramente superior al 50% de la media
+    
+    df_input = pd.DataFrame({
+        'timestamp': fechas,
+        'sensor_id': [101] * n_rows,
+        'lectura': lecturas
+    })
+    
+    # 3. Construir el INPUT
+    input_data = {
+        'df': df_input.copy(),
+        'ventana': ventana_rand
+    }
+    
+    # 4. Calcular el OUTPUT esperado (Ground Truth)
+    df_expected = df_input.copy()
+    df_expected['timestamp'] = pd.to_datetime(df_expected['timestamp'])
+    
+    # Lógica de la media móvil
+    media_movil = df_expected['lectura'].rolling(window=ventana_rand).mean()
+    
+    # Lógica del pico ( > 1.5 veces la media)
+    df_expected['es_pico'] = df_expected['lectura'] > (media_movil * 1.5)
+    
+    # Limpieza de NaNs
+    df_expected = df_expected.dropna().reset_index(drop=True)
+    
+    output_data = df_expected
+    
+    return input_data, output_data
+
+if __name__ == "__main__":
+    # Prueba rápida
+    inp, out = generar_caso_de_uso_detectar_picos_moviles()
+    print("✅ Caso de uso 0002 generado exitosamente.")
+    print(f"Ventana usada: {inp['ventana']}")
+    print("Primeras filas del resultado esperado:")
+    print(out.head())
