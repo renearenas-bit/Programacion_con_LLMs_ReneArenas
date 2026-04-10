@@ -6,7 +6,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.ensemble import IsolationForest
 
-def  :question-0002-usecase-generator.py
+def generar_caso_de_uso_preparar_datos_credito():
     np.random.seed(0)
 
     n = 200
@@ -18,7 +18,7 @@ def  :question-0002-usecase-generator.py
         'aprobado': np.random.choice([0, 1], n)
     })
 
-    input_data = {'df': df, 'target_col': 'aprobado'}
+    input_data = {'df': df.copy(), 'target_col': 'aprobado'}
 
     X = df.drop(columns=['aprobado'])
     y = df['aprobado'].values
@@ -30,7 +30,7 @@ def  :question-0002-usecase-generator.py
         ]), ['ingresos', 'deuda', 'edad']),
         ('cat', Pipeline([
             ('imputer', SimpleImputer(strategy='constant', fill_value='missing')),
-            ('ohe', OneHotEncoder(sparse=False))  # 🔥 CORREGIDO
+            ('ohe', OneHotEncoder(sparse_output=False))
         ]), ['tipo_empleo'])
     ])
 
