@@ -6,7 +6,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.ensemble import IsolationForest
 
-def generar_caso_de_uso_preparar_datos_credito():
+def  :question-0002-usecase-generator.py
     np.random.seed(0)
 
     n = 200
