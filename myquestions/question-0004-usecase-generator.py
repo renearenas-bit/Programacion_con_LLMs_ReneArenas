@@ -13,7 +13,7 @@ def generar_caso_de_uso_evaluar_modelo_por_umbrales():
 
     umbrales = [0.3, 0.5, 0.7]
 
-    input_data = {'X': X, 'y': y, 'umbrales': umbrales}
+    input_data = {'X': X.copy(), 'y': y.copy(), 'umbrales': umbrales}
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
@@ -24,4 +24,4 @@ def generar_caso_de_uso_evaluar_modelo_por_umbrales():
 
     scores = [f1_score(y_test, (probs >= u).astype(int)) for u in umbrales]
 
-    return input_data, np.array(scores, dtype=float)  # 🔥 robusto
+    return input_data, np.array(scores, dtype=float)
