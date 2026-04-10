@@ -14,7 +14,7 @@ def generar_caso_de_uso_reducir_y_evaluar_pca():
         'flujo': np.random.normal(100, 20, n)
     })
 
-    input_data = {'df': df, 'n_componentes': 2}
+    input_data = {'df': df.copy(), 'n_componentes': 2}
 
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(df)
