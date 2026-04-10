@@ -1,0 +1,14 @@
+El Problema: Pipeline de Preprocesamiento y Detección de Anomalías
+Un banco analiza solicitudes de crédito que incluyen variables numéricas y categóricas. Antes de entrenar un modelo predictivo, es necesario estandarizar los datos y filtrar registros sospechosos.
+
+Tu Misión:
+Escribe una función llamada preparar_datos_credito(df, target_col) que realice lo siguiente:
+1. División: Separe las características (X) de la variable objetivo (y) usando target_col.
+2. Transformación: Use ColumnTransformer para aplicar:
+   - Numéricas: Imputación por la mediana (median) y escalamiento con StandardScaler.
+   - Categóricas: Imputación constante ('missing') y OneHotEncoder (sparse_output=False).
+3. Limpieza: Utilice IsolationForest (random_state=42, contamination=0.05) sobre los datos transformados para identificar anomalías.
+4. Filtrado: Elimine las filas identificadas como anomalías (donde el modelo predice -1) tanto en X como en y.
+
+Retorno:
+Una tupla (X_limpio, y_limpio) conteniendo arrays de NumPy.
