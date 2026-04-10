@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import random
 
-def :question-0001-usecase-generator.py
+def generar_caso_de_uso_detectar_retrasos_por_ciudad():
     np.random.seed(0)
     random.seed(0)
 
@@ -17,7 +17,7 @@ def :question-0001-usecase-generator.py
 
     df.loc[0, 'tiempo_entrega'] = 50.0
 
-    input_data = {'df': df}
+    input_data = {'df': df.copy()}
 
     df_res = df.copy()
     df_res['fecha_envio'] = pd.to_datetime(df_res['fecha_envio'])
