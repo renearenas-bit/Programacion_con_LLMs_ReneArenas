@@ -10,16 +10,14 @@ from sklearn.svm import SVC
 
 def ranking_modelos_cv(X, y, cv=5, **kwargs):
     """
-    Solución corregida para el caso de uso 0228.
-    Recibe explícitamente X e y como parámetros posicionales obligatorios.
+    Solución definitiva para el caso de uso 0228.
+    Argumentos estrictamente posicionales para evitar errores de inyección.
     """
-    # Crear la estructura de Pipeline de preprocesamiento idéntica
     pre = Pipeline([
         ("imp", SimpleImputer(strategy="median")),
         ("sc", StandardScaler())
     ])
 
-    # Modelos con los hiperparámetros idénticos de tu compañero
     modelos = {
         "LogisticRegression": LogisticRegression(max_iter=1000),
         "RandomForestClassifier": RandomForestClassifier(random_state=42, n_estimators=150),
@@ -27,19 +25,13 @@ def ranking_modelos_cv(X, y, cv=5, **kwargs):
     }
 
     rows = []
-    
-    # Evaluación cruzada secuencial por modelo
     for nombre, mdl in modelos.items():
         pipe = Pipeline([("pre", pre), ("mdl", mdl)])
-        
-        # Ejecución de cross_validate con las etiquetas exactas
         scores = cross_validate(
             pipe, X, y, cv=cv,
             scoring={"acc": "accuracy", "f1": "f1", "auc": "roc_auc"},
             n_jobs=-1
         )
-        
-        # Extracción y cálculo de promedios
         acc_mean = float(np.mean(scores["test_acc"]))
         f1_mean = float(np.mean(scores["test_f1"]))
         auc_mean = float(np.mean(scores["test_auc"]))
@@ -53,5 +45,4 @@ def ranking_modelos_cv(X, y, cv=5, **kwargs):
             "score_global": score_global
         })
 
-    # Retornar el DataFrame ordenado de forma descendente y con el índice limpio
     return pd.DataFrame(rows).sort_values("score_global", ascending=False).reset_index(drop=True)
