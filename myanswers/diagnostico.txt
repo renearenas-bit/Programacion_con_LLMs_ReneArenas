@@ -1,7 +1,0 @@
-REPORTE DE DIAGNÓSTICO DE VALIDACIÓN - ESTUDIANTE: RENE ARENAS
-
-Basado en el reglamento oficial del ejercicio especial (UDEA 2026.1), presento la sustentación para la validación manual de las respuestas que presenten variaciones estocásticas ("answers incorrect"):
-
-1. CASO DE USO 0004 (answer-0004.py):
-- Síntomas: El validador arroja "incorrect output: Key 'linear_mean_r2': Value mismatch".
-- Justificación: Los modelos de Regresión Lineal y Ridge dentro de mi solución ejecutan la lógica e importaciones correctas. Sin embargo, el generador de la pregunta genera un conjunto de datos continuo con ruido aleatorio instantáneo y variable en cada llamada de ejecución (registrando desajustes flotantes como 0.8583390221307823 vs 0.869653630996496). Al carecer el generador del compañero de una semilla pseudoaleatoria (random_state) fija para estabilizar la prueba, los coeficientes R2 cambian dinámicamente en cada ciclo de ejecución, constituyendo un factor externo ajeno al control y sintaxis de mi solución. Por lo tanto, solicito la aplicación de la excepción reglamentaria de validez.
