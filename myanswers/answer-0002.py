@@ -4,14 +4,12 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 
-def segmentar_rutas(X, random_state=42, **kwargs):
-
-    X = np.array(X)
+def segmentar_rutas(X, y=None, random_state=42, **kwargs):
 
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
 
-    mejor_k = 2
+    mejor_k = None
     mejor_score = -1
     mejores_labels = None
 
@@ -40,7 +38,7 @@ def segmentar_rutas(X, random_state=42, **kwargs):
     resumen = df.groupby("cluster").mean()
 
     return {
-        "mejor_k": int(mejor_k),
+        "mejor_k": mejor_k,
         "mejor_score": float(mejor_score),
         "etiquetas": mejores_labels,
         "resumen": resumen
