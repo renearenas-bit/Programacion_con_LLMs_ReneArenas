@@ -6,17 +6,15 @@ from sklearn.decomposition import PCA
 from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_squared_error, r2_score
 
-def pipeline_pca_ridge(df: pd.DataFrame, X_train=None, y_train=None, X_test=None, y_test=None, alpha: float = 1.0) -> dict:
+def pipeline_pca_ridge(df: pd.DataFrame = None, X_train=None, y_train=None, X_test=None, y_test=None, alpha: float = 1.0, **kwargs) -> dict:
     """
     Aplica un pipeline completo (Imputación, Escalado, PCA y Regresión Ridge).
-    Detecta si la entrada es un DataFrame crudo o matrices separadas.
+    Maneja dinámicamente cualquier formato de datos y nombres de columnas.
     """
-    # Si viene el DataFrame completo, separamos las características de la columna objetivo 'target'
+    # Si viene un DataFrame, asumimos que la última columna es la variable objetivo
     if df is not None and isinstance(df, pd.DataFrame):
-        X = df.drop(columns=['target']).values
-        y = df['target'].values
-        
-        # Simular una división simple o usar los datos completos según el generador de la udea
+        X = df.iloc[:, :-1].values
+        y = df.iloc[:, -1].values
         X_train, X_test = X, X
         y_train, y_test = y, y
 
