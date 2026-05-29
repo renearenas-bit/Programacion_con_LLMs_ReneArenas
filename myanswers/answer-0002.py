@@ -1,24 +1,46 @@
 import numpy as np
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
 
-def solution(X=None, y_true=None, y_pred=None, **kwargs):
+def segmentar_rutas(X, random_state=42):
 
-    # Recuperar datos si vienen dentro de un diccionario
-    if isinstance(X, dict):
-        y_true = X.get("y_true", y_true)
-        y_pred = X.get("y_pred", y_pred)
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
 
-    # Recuperar desde kwargs
-    if y_true is None:
-        y_true = kwargs.get("y_true")
+    mejor_k = None
+    mejor_score = -1
+    mejores_labels = None
 
-    if y_pred is None:
-        y_pred = kwargs.get("y_pred")
+    for k in range(2, 9):
+
+        modelo = KMeans(
+            n_clusters=k,
+            n_init=10,
+            random_state=random_state
+        )
+
+        labels = modelo.fit_predict(X_scaled)
+
+        score = silhouette_score(X_scaled, labels)
+
+        if score > mejor_score:
+            mejor_score = score
+            mejor_k = k
+            mejores_labels = labels
+
+    df = pd.DataFrame(X)
+    df.columns = [f"feature_{i}" for i in range(X.shape[1])]
+
+    df["cluster"] = mejores_labels
+
+    resumen = df.groupby("cluster").mean()
 
     return {
-        "accuracy": float(accuracy_score(y_true, y_pred)),
-        "precision": float(precision_score(y_true, y_pred, zero_division=0)),
-        "recall": float(recall_score(y_true, y_pred, zero_division=0)),
-        "f1_score": float(f1_score(y_true, y_pred, zero_division=0))
+        "mejor_k": mejor_k,
+        "mejor_score": float(mejor_score),
+        "etiquetas": mejores_labels,
+        "resumen": resumen
     }
 
