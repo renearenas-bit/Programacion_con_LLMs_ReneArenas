@@ -4,9 +4,10 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 
-def segmentar_rutas(X: np.ndarray, random_state: int = 42) -> dict:
+def segmentar_rutas(X: np.ndarray, y=None, random_state: int = 42) -> dict:
     """
     Determina el número óptimo de clusters para las rutas utilizando KMeans y Silhouette Score.
+    Acepta 'y' para compatibilidad con el validador.
     """
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
