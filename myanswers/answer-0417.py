@@ -1,28 +1,11 @@
 import pandas as pd
 import numpy as np
 
-def construir_panel_diario(**kwargs):
+def construir_panel_diario(df, fecha_col, grupo_col, valor_col, **kwargs):
     """
-    Solución exacta y milimétrica para el caso de uso 0417.
-    Construye un panel diario completo reindexando mediante un MultiIndex
-    y asegurando el tipo de dato float en el resultado final.
+    Solución corregida para el caso de uso 0417.
+    Recibe explícitamente df, fecha_col, grupo_col y valor_col de forma posicional.
     """
-    # 1. Extracción segura y adaptativa de los parámetros desde kwargs
-    df = kwargs.get('df')
-    fecha_col = kwargs.get('fecha_col')
-    grupo_col = kwargs.get('grupo_col')
-    valor_col = kwargs.get('valor_col')
-
-    # Fallback defensivo por si cambian los nombres de las llaves
-    if df is None:
-        for val in kwargs.values():
-            if isinstance(val, pd.DataFrame):
-                df = val
-                break
-    if fecha_col is None: fecha_col = 'fecha'
-    if grupo_col is None: grupo_col = 'grupo'
-    if valor_col is None: valor_col = 'valor'
-
     # Copiar el DataFrame para evitar modificar el original en sitio
     trabajo = df.copy()
     
@@ -69,3 +52,4 @@ def construir_panel_diario(**kwargs):
     panel["valor_total"] = panel["valor_total"].astype(float)
     
     return panel
+     
