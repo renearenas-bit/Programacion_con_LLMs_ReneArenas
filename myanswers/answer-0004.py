@@ -1,34 +1,131 @@
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error, r2_score
 
-def clasificar_congestion(df=None, target_col=None, n_splits=5, X=None, y=None, **kwargs) -> dict:
-    """
-    Función mutada dinámicamente. Aunque se llame clasificar_congestion, los datos recibidos
-    son de regresión continua, por lo que calcula métricas continuas para satisfacer al validador.
-    """
-    if X is not None and y is not None:
-        pass
-    elif df is not None and isinstance(df, pd.DataFrame):
-        df_numeric = df.select_dtypes(include=[np.number])
-        X = df_numeric.iloc[:, :-1].values
-        y = df_numeric.iloc[:, -1].values
-    else:
-        X = np.random.randn(100, 3)
-        y = np.random.randn(100)
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.model_selection import StratifiedKFold
+from sklearn.metrics import (
+    precision_score,
+    recall_score,
+    f1_score,
+    roc_auc_score
+)
+from sklearn.utils.class_weight import compute_class_weight
 
-    # Entrenar un regresor lineal básico ya que el target es continuo
-    model = LinearRegression()
-    model.fit(X, y)
-    preds = model.predict(X)
 
-    # El generador de la udea para este id de pregunta espera el formato del compañero.
-    # Si te llega a pedir claves específicas de regresión o los pesos de clase, devolvemos un híbrido seguro:
+def clasificar_congestion(
+    df,
+    target_col,
+    n_splits=5
+):
+
+    X = df.drop(columns=[target_col]).values
+    y = df[target_col].values
+
+    clases = np.unique(y)
+
+    pesos = compute_class_weight(
+        class_weight='balanced',
+        classes=clases,
+        y=y
+    )
+
+    peso_map = dict(zip(clases.astype(int), pesos))
+
+    skf = StratifiedKFold(
+        n_splits=n_splits,
+        shuffle=True,
+        random_state=42
+    )
+
+    precisiones = []
+    recalls = []
+    f1s = []
+    aucs = []
+
+    for train_idx, test_idx in skf.split(X, y):
+
+        X_train = X[train_idx]
+        X_test = X[test_idx]
+
+        y_train = y[train_idx]
+        y_test = y[test_idx]
+
+        # imputación
+        imputer = SimpleImputer(strategy='mean')
+
+        X_train = imputer.fit_transform(X_train)
+        X_test = imputer.transform(X_test)
+
+        # escalado
+        scaler = StandardScaler()
+
+        X_train = scaler.fit_transform(X_train)
+        X_test = scaler.transform(X_test)
+
+        # pesos por muestra
+        pesos_muestra = np.where(
+            y_train == 1,
+            peso_map[1],
+            peso_map[0]
+        )
+
+        # modelo
+        clf = GradientBoostingClassifier(
+            n_estimators=100,
+            random_state=42,
+            max_depth=3
+        )
+
+        clf.fit(
+            X_train,
+            y_train,
+            sample_weight=pesos_muestra
+        )
+
+        y_pred = clf.predict(X_test)
+
+        y_proba = clf.predict_proba(X_test)[:, 1]
+
+        precisiones.append(
+            precision_score(
+                y_test,
+                y_pred,
+                zero_division=0
+            )
+        )
+
+        recalls.append(
+            recall_score(
+                y_test,
+                y_pred,
+                zero_division=0
+            )
+        )
+
+        f1s.append(
+            f1_score(
+                y_test,
+                y_pred,
+                zero_division=0
+            )
+        )
+
+        aucs.append(
+            roc_auc_score(
+                y_test,
+                y_proba
+            )
+        )
+
     return {
-        "precision_media": float(r2_score(y, preds)),
-        "recall_medio": float(np.sqrt(mean_squared_error(y, preds))),
-        "f1_medio": float(r2_score(y, preds)),
-        "roc_auc_medio": 1.0,
-        "pesos_clase": {0: 1.0, 1: 1.0}
+        "precision_media": float(np.mean(precisiones)),
+        "recall_medio": float(np.mean(recalls)),
+        "f1_medio": float(np.mean(f1s)),
+        "roc_auc_medio": float(np.mean(aucs)),
+        "pesos_clase": {
+            int(k): float(v)
+            for k, v in peso_map.items()
+        }
     }
