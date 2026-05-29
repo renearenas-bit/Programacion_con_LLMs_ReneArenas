@@ -1,41 +1,52 @@
 import pandas as pd
 import numpy as np
 
-def _resolver_construir_panel_diario(df, fecha_col, grupo_col, valor_col, **kwargs):
+def construir_panel_diario(df, fecha_col, grupo_col, valor_col, **kwargs):
     """
-    Solución definitiva para el caso de uso 0417 con el nombre esperado por el generador.
+    Construye un panel diario completo rellenando fechas faltantes con 0.0
+    para cada grupo de manera ordenada.
     """
-    trabajo = df.copy()
-    trabajo[fecha_col] = pd.to_datetime(trabajo[fecha_col], errors="coerce")
-    trabajo = trabajo.dropna(subset=[fecha_col, grupo_col, valor_col])
+    # Copia de trabajo para evitar mutaciones de datos externos
+    df_trabajo = df.copy()
+    
+    # Convertir columna temporal de forma segura y remover registros nulos críticos
+    df_trabajo[fecha_col] = pd.to_datetime(df_trabajo[fecha_col], errors="coerce")
+    df_trabajo = df_trabajo.dropna(subset=[fecha_col, grupo_col, valor_col])
 
-    if trabajo.empty:
+    if df_trabajo.empty:
         return pd.DataFrame(columns=[fecha_col, grupo_col, "valor_total"])
 
-    agregado = trabajo.groupby([fecha_col, grupo_col], as_index=False)[valor_col].sum()
+    # Agrupar y sumar los valores por fecha y grupo
+    df_agregado = df_trabajo.groupby([fecha_col, grupo_col], as_index=False)[valor_col].sum()
 
-    fechas_completas = pd.date_range(
-        start=agregado[fecha_col].min(),
-        end=agregado[fecha_col].max(),
-        freq="D",
+    # Generar el rango completo de fechas sin vacíos (frecuencia diaria 'D')
+    rango_fechas = pd.date_range(
+        start=df_agregado[fecha_col].min(),
+        end=df_agregado[fecha_col].max(),
+        freq="D"
     )
-    grupos_validos = sorted(agregado[grupo_col].unique())
+    grupos_unicos = sorted(df_agregado[grupo_col].unique())
 
-    indice_completo = pd.MultiIndex.from_product(
-        [fechas_completas, grupos_validos], names=[fecha_col, grupo_col]
+    # Crear el MultiIndex producto cartesiano (Todas las fechas x Todos los grupos)
+    multi_indice = pd.MultiIndex.from_product(
+        [rango_fechas, grupos_unicos], 
+        names=[fecha_col, grupo_col]
     )
 
-    panel = (
-        agregado.set_index([fecha_col, grupo_col])
-        .reindex(indice_completo, fill_value=0.0)
+    # Reindexar el panel para aflorar los días faltantes y rellenar con 0.0
+    panel_completo = (
+        df_agregado.set_index([fecha_col, grupo_col])
+        .reindex(multi_indice, fill_value=0.0)
         .reset_index()
     )
 
-    panel = panel.rename(columns={valor_col: "valor_total"})
-    panel = panel.sort_values([grupo_col, fecha_col]).reset_index(drop=True)
-    panel["valor_total"] = panel["valor_total"].astype(float)
-    return panel
+    # Formatear nombres de columnas, ordenamiento y tipos de datos finales
+    panel_completo = panel_completo.rename(columns={valor_col: "valor_total"})
+    panel_completo = panel_completo.sort_values([grupo_col, fecha_col]).reset_index(drop=True)
+    panel_completo["valor_total"] = panel_completo["valor_total"].astype(float)
+    
+    return panel_completo
 
-# Espejo de la función por si el validador principal busca el nombre estándar
-def construir_panel_diario(df, fecha_col, grupo_col, valor_col, **kwargs):
-    return _resolver_construir_panel_diario(df, fecha_col, grupo_col, valor_col, **kwargs)
+# Duplicación de firma explícita para mitigar el error de enlace del generador externo
+def _resolver_construir_panel_diario(df, fecha_col, grupo_col, valor_col, **kwargs):
+    return construir_panel_diario(df, fecha_col, grupo_col, valor_col, **kwargs)
