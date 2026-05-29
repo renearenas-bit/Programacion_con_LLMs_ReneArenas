@@ -8,32 +8,26 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 
-def ranking_modelos_cv(**kwargs):
+def ranking_modelos_cv(X=None, y=None, **kwargs):
     """
-    Solución exacta para el caso de uso 0228.
-    Evalúa y ranquea modelos de clasificación usando Cross-Validation
-    con pipelines de imputación y escalamiento integrados.
+    Solución corregida para el caso de uso 0228.
+    Soporta paso de argumentos posicionales (X, y) y por kwargs simultáneamente.
     """
-    # 1. Extracción directa y segura usando las llaves mapeadas por el generador
-    X = kwargs.get('X')
-    y = kwargs.get('y')
+    # 1. Si no llegaron por posición, los buscamos defensivamente en kwargs
+    if X is None:
+        X = kwargs.get('X')
+    if y is None:
+        y = kwargs.get('y')
+        
     cv = kwargs.get('cv', 5)
 
-    # Fallback defensivo por si cambiaran las estructuras de entrada
-    if X is None or y is None:
-        for val in kwargs.values():
-            if isinstance(val, (pd.DataFrame, np.ndarray)):
-                arr = np.array(val)
-                if arr.ndim == 2: X = val
-                elif arr.ndim == 1: y = val
-
-    # 2. Replicar exactamente la estructura de Pipeline de preprocesamiento de la pregunta
+    # 2. Replicar la estructura de Pipeline de preprocesamiento de la pregunta
     pre = Pipeline([
         ("imp", SimpleImputer(strategy="median")),
         ("sc", StandardScaler())
     ])
 
-    # 3. Modelos con los hiperparámetros idénticos (¡Ojo con n_estimators=150!)
+    # 3. Modelos con los hiperparámetros idénticos requeridos
     modelos = {
         "LogisticRegression": LogisticRegression(max_iter=1000),
         "RandomForestClassifier": RandomForestClassifier(random_state=42, n_estimators=150),
