@@ -1,46 +1,51 @@
 import numpy as np
-from sklearn.impute import SimpleImputer
+import pandas as pd
 from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
-from sklearn.linear_model import Ridge
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
 
-def pipeline_pca_ridge(
-    X_train,
-    y_train,
-    X_test,
-    y_test,
-    alpha=1.0
-):
-
-    imputer = SimpleImputer(strategy='mean')
-
-    X_train = imputer.fit_transform(X_train)
-    X_test = imputer.transform(X_test)
+def segmentar_rutas(X, random_state=42, y=None, **kwargs):
 
     scaler = StandardScaler()
 
-    X_train = scaler.fit_transform(X_train)
-    X_test = scaler.transform(X_test)
+    X_scaled = scaler.fit_transform(X)
 
-    pca = PCA(n_components=0.95)
+    mejor_k = None
+    mejor_score = -1
+    mejores_labels = None
 
-    X_train = pca.fit_transform(X_train)
-    X_test = pca.transform(X_test)
+    for k in range(2, 9):
 
-    modelo = Ridge(alpha=alpha)
+        modelo = KMeans(
+            n_clusters=k,
+            n_init=10,
+            random_state=random_state
+        )
 
-    modelo.fit(X_train, y_train)
+        labels = modelo.fit_predict(X_scaled)
 
-    pred = modelo.predict(X_test)
+        score = silhouette_score(X_scaled, labels)
 
-    rmse = np.sqrt(mean_squared_error(y_test, pred))
+        if score > mejor_score:
 
-    r2 = r2_score(y_test, pred)
+            mejor_score = score
+            mejor_k = k
+            mejores_labels = labels
+
+    df = pd.DataFrame(X)
+
+    df.columns = [
+        f"feature_{i}"
+        for i in range(X.shape[1])
+    ]
+
+    df["cluster"] = mejores_labels
+
+    resumen = df.groupby("cluster").mean()
 
     return {
-        "n_componentes": int(pca.n_components_),
-        "rmse": float(rmse),
-        "r2": float(r2),
-        "predicciones": pred
+        "mejor_k": mejor_k,
+        "mejor_score": float(mejor_score),
+        "etiquetas": mejores_labels,
+        "resumen": resumen
     }
