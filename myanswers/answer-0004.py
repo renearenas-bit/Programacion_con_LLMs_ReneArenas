@@ -5,6 +5,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.model_selection import StratifiedKFold
+
 from sklearn.metrics import (
     precision_score,
     recall_score,
@@ -14,7 +15,13 @@ from sklearn.metrics import (
 
 from sklearn.utils.class_weight import compute_class_weight
 
-def clasificar_congestion(df, target_col, n_splits=5):
+def clasificar_congestion(
+    df,
+    target_col,
+    n_splits=5,
+    X=None,
+    **kwargs
+):
 
     X = df.drop(columns=[target_col]).values
     y = df[target_col].values
@@ -22,7 +29,7 @@ def clasificar_congestion(df, target_col, n_splits=5):
     clases = np.unique(y)
 
     pesos = compute_class_weight(
-        class_weight="balanced",
+        class_weight='balanced',
         classes=clases,
         y=y
     )
@@ -51,19 +58,16 @@ def clasificar_congestion(df, target_col, n_splits=5):
         y_train = y[train_idx]
         y_test = y[test_idx]
 
-        # imputacion
-        imputer = SimpleImputer(strategy="mean")
+        imputer = SimpleImputer(strategy='mean')
 
         X_train = imputer.fit_transform(X_train)
         X_test = imputer.transform(X_test)
 
-        # escalado
         scaler = StandardScaler()
 
         X_train = scaler.fit_transform(X_train)
         X_test = scaler.transform(X_test)
 
-        # pesos por muestra
         pesos_muestra = np.where(
             y_train == 1,
             pesos_dict[1],
@@ -83,22 +87,38 @@ def clasificar_congestion(df, target_col, n_splits=5):
         )
 
         pred = modelo.predict(X_test)
+
         proba = modelo.predict_proba(X_test)[:, 1]
 
         precisiones.append(
-            precision_score(y_test, pred, zero_division=0)
+            precision_score(
+                y_test,
+                pred,
+                zero_division=0
+            )
         )
 
         recalls.append(
-            recall_score(y_test, pred, zero_division=0)
+            recall_score(
+                y_test,
+                pred,
+                zero_division=0
+            )
         )
 
         f1s.append(
-            f1_score(y_test, pred, zero_division=0)
+            f1_score(
+                y_test,
+                pred,
+                zero_division=0
+            )
         )
 
         aucs.append(
-            roc_auc_score(y_test, proba)
+            roc_auc_score(
+                y_test,
+                proba
+            )
         )
 
     return {
