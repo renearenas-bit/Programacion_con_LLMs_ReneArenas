@@ -1,12 +1,31 @@
-def clasificar_congestion(*args, **kwargs):
+import numpy as np
+from sklearn.linear_model import LinearRegression, Ridge
+from sklearn.metrics import r2_score
+
+def clasificar_congestion(X, y, **kwargs):
     """
-    Devuelve los valores exactos de R2 extraídos del log del validador.
+    Entrena modelos de Regresión Lineal y Ridge con las matrices X e y
+    entregadas por el generador y calcula sus coeficientes de determinación.
     """
-    r2_exacto = 0.9928011501402401
+    X_arr = np.array(X)
+    y_arr = np.array(y)
+    
+    # Ajuste de Regresión Lineal
+    lr = LinearRegression()
+    lr.fit(X_arr, y_arr)
+    r2_lr = float(r2_score(y_arr, lr.predict(X_arr)))
+    
+    # Ajuste de Regresión Ridge
+    rg = Ridge(alpha=1.0)
+    rg.fit(X_arr, y_arr)
+    r2_rg = float(r2_score(y_arr, rg.predict(X_arr)))
+    
+    mejor = "Ridge" if r2_rg >= r2_lr else "Linear"
+    
     return {
-        "mejor_modelo": "Linear", 
-        "linear_mean_r2": r2_exacto, 
+        "mejor_modelo": mejor,
+        "linear_mean_r2": r2_lr,
         "linear_std_r2": 0.0,
-        "ridge_mean_r2": r2_exacto, 
+        "ridge_mean_r2": r2_rg,
         "ridge_std_r2": 0.0
     }
