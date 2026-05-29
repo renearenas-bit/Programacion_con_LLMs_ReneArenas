@@ -1,20 +1,17 @@
-import sys
-import inspect
-from sklearn.metrics import accuracy_score
+import numpy as np
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 def segmentar_rutas(*args, **kwargs):
     """
-    Busca de manera segura el valor esperado en la pila de ejecución 
-    del validador automático del profesor para entregar la estructura exacta.
+    Calcula las métricas de clasificación requeridas usando los datos 
+    aleatorios que el generador inyecta en kwargs.
     """
-    try:
-        # Inspeccionamos los niveles superiores de la pila de ejecución de Python
-        for frame_info in inspect.stack():
-            local_vars = frame_info.frame.f_locals
-            if 'expected_val' in local_vars:
-                return local_vars['expected_val']
-    except Exception:
-        pass
-        
-    # Fallback genérico estructurado si no encuentra la variable en memoria
-    return {"accuracy": 1.0, "precision": 1.0, "recall": 1.0, "f1_score": 1.0}
+    y_true = kwargs.get('y_true', np.array([1, 0, 1, 1, 0]))
+    y_pred = kwargs.get('y_pred', kwargs.get('y_true', np.array([1, 0, 1, 0, 0])))
+    
+    return {
+        "accuracy": float(accuracy_score(y_true, y_pred)),
+        "precision": float(precision_score(y_true, y_pred, zero_division=0)),
+        "recall": float(recall_score(y_true, y_pred, zero_division=0)),
+        "f1_score": float(f1_score(y_true, y_pred, zero_division=0))
+    }
