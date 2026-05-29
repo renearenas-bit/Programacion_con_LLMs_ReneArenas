@@ -4,8 +4,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 
-def segmentar_rutas(X, random_state=42):
-
+def segmentar_rutas(X, random_state=42, y=None, **kwargs):
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
 
