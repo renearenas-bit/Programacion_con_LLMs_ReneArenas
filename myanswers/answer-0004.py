@@ -11,14 +11,10 @@ from sklearn.metrics import (
     f1_score,
     roc_auc_score
 )
+
 from sklearn.utils.class_weight import compute_class_weight
 
-
-def clasificar_congestion(
-    df,
-    target_col,
-    n_splits=5
-):
+def clasificar_congestion(df, target_col, n_splits=5):
 
     X = df.drop(columns=[target_col]).values
     y = df[target_col].values
@@ -26,12 +22,15 @@ def clasificar_congestion(
     clases = np.unique(y)
 
     pesos = compute_class_weight(
-        class_weight='balanced',
+        class_weight="balanced",
         classes=clases,
         y=y
     )
 
-    peso_map = dict(zip(clases.astype(int), pesos))
+    pesos_dict = {
+        int(clases[i]): float(pesos[i])
+        for i in range(len(clases))
+    }
 
     skf = StratifiedKFold(
         n_splits=n_splits,
@@ -52,8 +51,8 @@ def clasificar_congestion(
         y_train = y[train_idx]
         y_test = y[test_idx]
 
-        # imputación
-        imputer = SimpleImputer(strategy='mean')
+        # imputacion
+        imputer = SimpleImputer(strategy="mean")
 
         X_train = imputer.fit_transform(X_train)
         X_test = imputer.transform(X_test)
@@ -67,56 +66,39 @@ def clasificar_congestion(
         # pesos por muestra
         pesos_muestra = np.where(
             y_train == 1,
-            peso_map[1],
-            peso_map[0]
+            pesos_dict[1],
+            pesos_dict[0]
         )
 
-        # modelo
-        clf = GradientBoostingClassifier(
+        modelo = GradientBoostingClassifier(
             n_estimators=100,
-            random_state=42,
-            max_depth=3
+            max_depth=3,
+            random_state=42
         )
 
-        clf.fit(
+        modelo.fit(
             X_train,
             y_train,
             sample_weight=pesos_muestra
         )
 
-        y_pred = clf.predict(X_test)
-
-        y_proba = clf.predict_proba(X_test)[:, 1]
+        pred = modelo.predict(X_test)
+        proba = modelo.predict_proba(X_test)[:, 1]
 
         precisiones.append(
-            precision_score(
-                y_test,
-                y_pred,
-                zero_division=0
-            )
+            precision_score(y_test, pred, zero_division=0)
         )
 
         recalls.append(
-            recall_score(
-                y_test,
-                y_pred,
-                zero_division=0
-            )
+            recall_score(y_test, pred, zero_division=0)
         )
 
         f1s.append(
-            f1_score(
-                y_test,
-                y_pred,
-                zero_division=0
-            )
+            f1_score(y_test, pred, zero_division=0)
         )
 
         aucs.append(
-            roc_auc_score(
-                y_test,
-                y_proba
-            )
+            roc_auc_score(y_test, proba)
         )
 
     return {
@@ -124,8 +106,5 @@ def clasificar_congestion(
         "recall_medio": float(np.mean(recalls)),
         "f1_medio": float(np.mean(f1s)),
         "roc_auc_medio": float(np.mean(aucs)),
-        "pesos_clase": {
-            int(k): float(v)
-            for k, v in peso_map.items()
-        }
+        "pesos_clase": pesos_dict
     }
